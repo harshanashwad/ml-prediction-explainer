@@ -43,6 +43,7 @@ def train_model(df: pd.DataFrame, target: str):
    
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    training_samples_used = len(X_train)
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
 
@@ -81,6 +82,7 @@ def train_model(df: pd.DataFrame, target: str):
         "dropped_columns": drop_cols,
         "row_count_before_preprocessing": len(df),
         "row_count_after_preprocessing": len(X),
+        "training_samples": training_samples_used,
         "feature_encoding": "one_hot",
         "missing_value_strategy": "drop"
     }

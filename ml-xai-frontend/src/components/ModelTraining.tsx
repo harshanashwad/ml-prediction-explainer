@@ -159,12 +159,8 @@ const ModelTraining = ({ uploadData, target, targetType, onTrainingComplete, onV
             <span className="ml-2 font-medium capitalize">{data.task}</span>
           </div>
           <div>
-            <span className="text-gray-600">Features Used:</span>
-            <span className="ml-2 font-medium">{data.final_columns?.length || 0}</span>
-          </div>
-          <div>
             <span className="text-gray-600">Training Samples:</span>
-            <span className="ml-2 font-medium">{data.row_count_after_preprocessing}</span>
+            <span className="ml-2 font-medium">{data.training_samples}</span>
           </div>
         </div>
       </div>
