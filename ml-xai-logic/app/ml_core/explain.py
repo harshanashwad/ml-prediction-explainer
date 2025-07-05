@@ -159,7 +159,7 @@ def compute_local_shap_values_classification(model, X_test, shap_values, base_va
             "class_wise_feature_contributions": class_explanations
         })
 
-        return local_explanations
+    return local_explanations
 
 ############################################################
 # Main driver function for /explain-model endpoint
