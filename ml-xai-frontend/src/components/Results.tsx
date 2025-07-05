@@ -2,13 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BarChart3, Eye, RefreshCw, Download } from 'lucide-react';
+import { BarChart3, Eye, RefreshCw, Download, Target } from 'lucide-react';
 import { getExplanations } from '@/utils/api';
 import { useToast } from '@/hooks/use-toast';
 import GlobalShapResults from './GlobalShapResults';
 import LocalShapResults from './LocalShapResults';
 
-const Results = ({ trainingResults }) => {
+const Results = ({ trainingResults, target }) => {
   const [explanationsData, setExplanationsData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('global');
@@ -67,6 +67,14 @@ const Results = ({ trainingResults }) => {
           <p className="text-gray-600 mt-2">
             Understand how your {trainingResults.model_type} makes predictions using SHAP values
           </p>
+
+          {/* Target Variable Display */}
+          <div className="mt-4 inline-flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+            <Target className="h-4 w-4 text-blue-600" />
+            <span className="text-blue-700 font-medium">Predicting:</span>
+            <span className="text-blue-900 font-bold">{target || 'Unknown Target'}</span>
+          </div>
+
         </CardHeader>
         <CardContent>
           {/* Navigation Tabs */}

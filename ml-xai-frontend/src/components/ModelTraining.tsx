@@ -102,6 +102,22 @@ const ModelTraining = ({ uploadData, target, targetType, onTrainingComplete, onV
           <CheckCircle className="h-5 w-5 text-green-500" />
           Training Results
         </h4>
+
+        {/* Target Variable Display */}
+        <div className="bg-blue-50 rounded-lg p-4 mb-6 border-l-4 border-blue-500">
+          <div className="flex items-center gap-2">
+            <span className="text-blue-700 font-medium">Target Variable:</span>
+            <span className="text-blue-900 font-bold text-lg">{target}</span>
+            <span className={`text-xs px-2 py-1 rounded ${
+              targetType === 'numeric'
+                ? 'bg-green-100 text-green-700'
+                : 'bg-purple-100 text-purple-700'
+            }`}>
+              {targetType}
+            </span>
+          </div>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {isClassification ? (
             <>

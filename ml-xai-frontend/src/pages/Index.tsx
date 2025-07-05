@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, Brain, BarChart3, FileText } from 'lucide-react';
+import { Upload, Brain, BarChart3, Target } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
 import TargetSelection from '@/components/TargetSelection';
 import ModelTraining from '@/components/ModelTraining';
@@ -17,7 +17,7 @@ const Index = () => {
 
   const steps = [
     { id: 1, title: 'Upload Data', icon: Upload, description: 'Upload your CSV dataset' },
-    { id: 2, title: 'Select Target', icon: FileText, description: 'Choose a target variable' },
+    { id: 2, title: 'Select Target', icon: Target, description: 'Choose a target variable' },
     { id: 3, title: 'Train Model', icon: Brain, description: 'Train ML model' },
     { id: 4, title: 'View Results', icon: BarChart3, description: 'Analyze explanations' }
   ];
@@ -158,7 +158,10 @@ const Index = () => {
             />
           )}
           {currentStep === 4 && (
-            <Results trainingResults={trainingResults} />
+            <Results 
+            trainingResults={trainingResults}
+            target={target}
+             />
           )}
         </div>
       </div>
