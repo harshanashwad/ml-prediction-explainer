@@ -67,15 +67,15 @@ def train_model(df: pd.DataFrame, target: str):
         "task": task,
         "model_type": type(model).__name__,
         "metrics": {
-            "accuracy": round(acc, 3),
+            "accuracy": round(acc, 2),
             "confusion_matrix": cm,
-            "precision": round(precision, 3),
-            "recall": round(recall, 3),
-            "f1_score": round(f1, 3)
+            "precision": round(precision, 2),
+            "recall": round(recall, 2),
+            "f1_score": round(f1, 2)
         } if task == "classification" else {
-            "mse": round(mse, 3),
-            "mae": round(mae, 3),
-            "r2": round(r2, 3)
+            "mse": round(mse, 2),
+            "mae": round(mae, 2),
+            "r2": round(r2, 2)
         },
         "final_columns": X.columns.tolist(),
         "dropped_columns": drop_cols,
