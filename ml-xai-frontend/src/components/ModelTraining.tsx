@@ -104,7 +104,7 @@ const ModelTraining = ({ uploadData, target, targetType, onTrainingComplete, onV
         </h4>
 
         {/* Target Variable Display */}
-        <div className="bg-blue-50 rounded-lg p-4 mb-6 border-l-4 border-blue-500">
+        {/* <div className="bg-blue-50 rounded-lg p-4 mb-6 border-l-4 border-blue-500">
           <div className="flex items-center gap-2">
             <span className="text-blue-700 font-medium">Target Variable:</span>
             <span className="text-blue-900 font-bold text-lg">{target}</span>
@@ -116,7 +116,7 @@ const ModelTraining = ({ uploadData, target, targetType, onTrainingComplete, onV
               {targetType}
             </span>
           </div>
-        </div>
+        </div> */}
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {isClassification ? (
@@ -173,6 +173,10 @@ const ModelTraining = ({ uploadData, target, targetType, onTrainingComplete, onV
           <div>
             <span className="text-gray-600">Task:</span>
             <span className="ml-2 font-medium capitalize">{data.task}</span>
+          </div>
+          <div>
+            <span className="text-gray-600">Target variable:</span>
+            <span className="ml-2 font-medium">{target}</span>
           </div>
           <div>
             <span className="text-gray-600">Training Samples:</span>
