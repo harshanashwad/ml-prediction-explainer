@@ -2,6 +2,45 @@ from fastapi import UploadFile
 import pandas as pd
 import os
 import io
+from pandas.api.types import is_numeric_dtype, is_string_dtype, is_categorical_dtype
+
+def detect_column_types(df: pd.DataFrame) -> dict:
+    result = {
+        "numeric": [],
+        "categorical": []
+    }
+
+    for col in df.columns:
+        series = df[col]
+        nunique = series.nunique()
+
+        # Step 1: If it's already numeric
+        if pd.api.types.is_numeric_dtype(series):
+            if nunique > 15:
+                result["numeric"].append(col)
+            else:
+                result["categorical"].append(col)
+
+        # Step 2: If it's string or categorical type
+        elif pd.api.types.is_string_dtype(series) or pd.api.types.is_categorical_dtype(series):
+            result["categorical"].append(col)
+
+        # Step 3: Try to coerce to numeric (e.g., object that looks like numbers)
+        else:
+            coerced = pd.to_numeric(series, errors='coerce')
+            valid_ratio = coerced.notnull().sum() / len(series)
+
+            if valid_ratio > 0.8:  # It's mostly coercible to numeric
+                if coerced.nunique() > 15:
+                    result["numeric"].append(col)
+                else:
+                    result["categorical"].append(col)
+            else:
+                result["categorical"].append(col)
+
+    return result
+
+
 
 # function takes in the CSV file (of type FastAPI UploadFile) and returns a dataframe
 def read_uploaded_csv(file: UploadFile) -> pd.DataFrame: 
@@ -23,10 +62,15 @@ def validate_dataframe(df: pd.DataFrame) -> dict:
         raise ValueError("Dataframe contains only null values.")
     # Note: Pandas unable to read the file is handled by the read_uploaded_csv function
 
+    # Detect column types
+    column_types = detect_column_types(df)
     warnings = []
     # Look for null/missing values anywhere in the dataframe
     if df.isnull().sum().any():
         warnings.append("Contains null values")
+    
+    total_nulls = int(df.isnull().sum().sum())
+
     
     # Same values for all rows in a column doesn't add any value while predicting
     constant_cols = [col for col in df.columns if df[col].nunique() <= 1]
@@ -46,7 +90,9 @@ def validate_dataframe(df: pd.DataFrame) -> dict:
 
     return {
         "columns": df.columns.tolist(),
+        "column_types": column_types,
         "row_count": df.shape[0],
+        "missing_values": total_nulls,
         "column_count": df.shape[1],
         "target_candidates": target_candidates,
         "warnings": warnings
