@@ -4,6 +4,52 @@ import os
 import io
 from pandas.api.types import is_numeric_dtype, is_string_dtype, is_categorical_dtype
 
+from sklearn.impute import SimpleImputer
+
+def preprocess_dataset(dataset: pd.DataFrame, model_columns: list) -> pd.DataFrame:
+    """
+    Preprocess the original dataset with imputation and one-hot encoding.
+    Ensures resulting DataFrame aligns with model_columns (used during training).
+    
+    Args:
+        dataset (pd.DataFrame): Original full dataset
+        model_columns (list): Column names expected by the trained model
+
+    Returns:
+        pd.DataFrame: Preprocessed dataset with aligned columns
+    """
+    try:
+        # Detect column types
+        column_types = detect_column_types(dataset)
+        numeric_features = column_types["numeric"]
+        categorical_features = column_types["categorical"]
+
+        # Impute numeric and categorical features
+        num_imputer = SimpleImputer(strategy="mean")
+        cat_imputer = SimpleImputer(strategy="most_frequent")
+
+        dataset[numeric_features] = num_imputer.fit_transform(dataset[numeric_features])
+        dataset[categorical_features] = cat_imputer.fit_transform(dataset[categorical_features])
+
+        # One-hot encode categorical features
+        dataset_encoded = pd.get_dummies(dataset, columns=categorical_features)
+
+        # Align with model_columns: add any missing ones and drop extras
+        for col in model_columns:
+            if col not in dataset_encoded.columns:
+                dataset_encoded[col] = 0  # Add missing dummy column
+
+        dataset_encoded = dataset_encoded[model_columns]  # Ensure correct order and only expected columns
+
+        # Save for inspection/debugging
+        dataset_encoded.to_csv("artifacts/X_processed.csv", index=True)
+
+        return dataset_encoded
+
+    except Exception as e:
+        raise ValueError(f"Preprocessing failed: {str(e)}")
+
+
 def detect_column_types(df: pd.DataFrame) -> dict:
     result = {
         "numeric": [],

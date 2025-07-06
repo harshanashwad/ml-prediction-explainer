@@ -24,6 +24,7 @@ async def upload_csv(file: UploadFile):
 
         # Optional: Save it for reuse. If you observe corrupted csv files are mostly handled in except block so it's not even saved temporarily. It means in many cases, corrupted files are (mostly) not even allowed to enter the pipeline let alone dealing with that in a later step.
         df.to_csv("data/last_uploaded.csv", index=False)
+        df.to_csv("artifacts/uploaded_dataset.csv", index=False)
 
         return validation
     except Exception as e:
