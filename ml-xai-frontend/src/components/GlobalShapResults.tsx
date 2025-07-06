@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 
-function GlobalShapResults({ data, model_type }) {
+function GlobalShapResults({ data, model_type, target }) {
   if (!data || !model_type) return null;
 
   let displayData = [];

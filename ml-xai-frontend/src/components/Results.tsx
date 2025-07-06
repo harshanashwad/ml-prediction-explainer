@@ -156,6 +156,7 @@ const Results = ({ trainingResults, target }) => {
                 <GlobalShapResults 
                   data={explanationsData.global_feature_importance} 
                   model_type={explanationsData.model_type}
+                  target = {target}
                 />
               )}
               
