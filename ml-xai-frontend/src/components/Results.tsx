@@ -186,7 +186,7 @@ const Results = ({ trainingResults, target }) => {
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
-            <Button
+            {/* <Button
               onClick={() => {
                 // Future: implement download functionality
                 toast({
@@ -199,7 +199,7 @@ const Results = ({ trainingResults, target }) => {
             >
               <Download className="h-4 w-4 mr-2" />
               Export Results
-            </Button>
+            </Button> */}
           </div>
         </CardContent>
       </Card>
