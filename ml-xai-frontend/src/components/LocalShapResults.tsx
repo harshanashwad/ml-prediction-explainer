@@ -7,13 +7,13 @@ import { get } from "http";
 
 function LocalShapResults({ data, model_type, baseline, target }) {
   if (!data || !data.length || !model_type) return null;
-  console.log(data)
+  // console.log(data)
   const getBaselineValue = (index=0) => {
     if (model_type === "RandomForestRegressor") {
-      console.log(baseline[0])
+      // console.log(baseline[0])
       return baseline && baseline.length > 0 ? baseline[0] : 0;
     } else {
-      console.log(data[index].baseline_probability_for_predicted_class)
+      // console.log(data[index].baseline_probability_for_predicted_class)
       return data[index].baseline_probability_for_predicted_class
     }
   };
@@ -155,7 +155,7 @@ function LocalShapResults({ data, model_type, baseline, target }) {
                   }
                 ];
               })();
-              console.log(chartData)
+              // console.log(chartData)
     
               return (
                 <Card key={rowId} className="border-l-4 border-l-blue-500 bg-blue-50">

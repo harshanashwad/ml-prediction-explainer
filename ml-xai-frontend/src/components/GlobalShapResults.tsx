@@ -32,7 +32,6 @@ function GlobalShapResults({ data, model_type, target }) {
 
   // Get top 10 features for chart
   const top10Features = displayData.slice(0, 10);
-  console.log(top10Features)
   
   // Get top 3 features for textual summary
   const topFeatures = displayData.slice(0, 3);
