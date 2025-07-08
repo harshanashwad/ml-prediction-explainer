@@ -94,7 +94,7 @@ function LocalShapResults({ data, model_type, baseline, target }) {
       </CardHeader>
       <CardContent>
         <div className="space-y-8">
-          {data.map((item) => {
+          {data.map((item, index) => {
             const rowId = item.row_index;
             const prediction = item.prediction;
 
@@ -342,7 +342,7 @@ function LocalShapResults({ data, model_type, baseline, target }) {
                 .sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
 
                // Calculate cumulative values starting from baseline
-              const baselineValue = getBaselineValue(rowId);
+              const baselineValue = getBaselineValue(index);
               let cumulative = baselineValue;
               const cumulativeValues = contributions.map(contrib => {
                 cumulative += contrib.value;
