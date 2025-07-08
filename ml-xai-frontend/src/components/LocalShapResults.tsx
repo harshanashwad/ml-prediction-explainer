@@ -1,10 +1,37 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, Target, TrendingUp, TrendingDown } from 'lucide-react';
+import { Eye, Target, ChartBarStacked, TrendingUpDown } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-function LocalShapResults({ data, model_type }) {
+function LocalShapResults({ data, model_type, baseline, target }) {
   if (!data || !data.length || !model_type) return null;
+
+  const getBaselineValue = () => {
+    if (model_type === "RandomForestRegressor") {
+      return baseline && baseline.length > 0 ? baseline[0] : 0;
+    } else {
+      // For classification, always use 0.5 as requested
+      return 0.5;
+    }
+  };
+
+  const baselineValue = getBaselineValue();
+
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any; label?: any }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+          <p className="font-medium text-gray-900">{data.feature}</p>
+          <p className="text-sm text-gray-600">
+            SHAP Value: <span className="font-mono font-bold">{data.value.toFixed(4)}</span>
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <Card className="shadow-lg animate-fade-in">
@@ -15,66 +42,132 @@ function LocalShapResults({ data, model_type }) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-6">
+        <div className="space-y-8">
           {data.map((item) => {
             const rowId = item.row_index;
             const prediction = item.prediction;
 
             if (model_type === "RandomForestRegressor") {
-              const sortedContributions = Object.entries(item.shap_contributions).sort(
-                (a, b) => Math.abs(Number(b[1])) - Math.abs(Number(a[1]))
-              );
+              // Get SHAP contributions and sort by absolute value
+              const contributions = Object.entries(item.shap_contributions)
+                .map(([feature, value]) => ({
+                  feature,
+                  value: Number(value)
+                }))
+                .sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+
+              const top3Contributors = contributions.slice(0, 3);
+
+              // Prepare waterfall data
+              const waterfallData = contributions.map((contrib, index) => ({
+                feature: contrib.feature,
+                value: contrib.value,
+                cumulative: contributions.slice(0, index + 1).reduce((sum, c) => sum + c.value, baselineValue)
+              }));
 
               return (
                 <Card key={rowId} className="border-l-4 border-l-blue-500 bg-blue-50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Target className="h-4 w-4 text-blue-600" />
-                      <span className="font-medium text-blue-900">Row #{rowId}</span>
+                  <CardContent className="p-6">
+                    {/* Header */}
+                    <div className="flex items-center gap-2 mb-4">
+                      <ChartBarStacked className="h-5 w-5 text-blue-600" />
+                      <h3 className="text-lg font-semibold text-blue-900">
+                        Prediction Explanation for Row #{rowId}
+                      </h3>
                     </div>
-                    <div className="mb-4 p-3 bg-white rounded-lg border">
-                      <span className="text-sm text-gray-600">Prediction: </span>
-                      <span className="text-lg font-bold text-green-600">
-                        {Number(prediction).toLocaleString("en-US", {
-                          maximumFractionDigits: 2,
-                        })}
-                      </span>
+
+                    {/* Prediction Summary */}
+                    <div className="mb-6 p-4 bg-white rounded-lg border">
+                      <p className="text-gray-700 mb-2">
+                        The model predicted <span className="font-semibold">{target}</span> ={' '}
+                        <span className="text-lg font-bold text-blue-600">{String(prediction)}</span>
+                      </p>
+
+                      <p className="text-gray-600 text-sm">
+                        The baseline prediction is{' '}
+                        <span className="font-semibold">
+                          {typeof baselineValue === 'number' ? baselineValue.toFixed(2) : String(baselineValue)}
+                        </span>{' '}
+                        (baseline = model output when none of the features are provided). 
+                        The SHAP values below explain how the prediction deviates from this baseline.
+                      </p>
+
+
                     </div>
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-gray-700 mb-3">Feature Contributions:</h4>
-                      {sortedContributions.map(([feature, val], index) => {
-                        const numVal = Number(val);
-                        const isPositive = numVal > 0;
-                        const barWidth = Math.min(Math.abs(numVal) / Math.max(...sortedContributions.map(([, v]) => Math.abs(Number(v)))) * 100, 100);
-                        
-                        return (
-                          <div key={feature} className="p-2 bg-white rounded border">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-sm font-medium text-gray-700">{feature}</span>
-                              <div className="flex items-center gap-1">
-                                {isPositive ? (
-                                  <TrendingUp className="h-3 w-3 text-green-500" />
-                                ) : (
-                                  <TrendingDown className="h-3 w-3 text-red-500" />
-                                )}
-                                <span className={`text-sm font-mono ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                                  {numVal.toLocaleString("en-US", {
-                                    maximumFractionDigits: 2,
-                                  })}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="w-full bg-gray-100 rounded-full h-1.5">
-                              <div
-                                className={`h-1.5 rounded-full transition-all duration-300 ${
-                                  isPositive ? 'bg-green-400' : 'bg-red-400'
-                                }`}
-                                style={{ width: `${barWidth}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
+
+                    {/* Top Contributors */}
+                    <div className="mb-6">
+                      <h4 className="font-semibold text-gray-800 mb-3">
+                        The top 3 features influencing this prediction are:
+                      </h4>
+                      <ul className="space-y-2">
+                        {top3Contributors.map((contrib, index) => (
+                          <li key={index} className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${contrib.value > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
+                            <span className="font-medium text-gray-700">{contrib.feature}:</span>
+                            <span className={contrib.value > 0 ? 'text-green-600' : 'text-red-600'}>
+                              {contrib.value > 0 ? 'Increased' : 'Decreased'} the predicted {target} by{' '}
+                              {Math.abs(contrib.value).toFixed(2)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+
+                    {/* Closing Note */}
+                    <p className="text-sm text-gray-600 mb-6">
+                      Other features also contribute smaller amounts. See the visualization below for a complete breakdown.
+                    </p>
+
+                    {/* Waterfall Plot */}
+                    <div className="bg-white rounded-lg p-4 border">
+                      <h4 className="font-semibold text-gray-800 mb-4 text-center">
+                        How Features Shape the Prediction for Row #{rowId}
+                      </h4>
+                      <div className="h-96">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={waterfallData}
+                            layout="vertical"
+                            margin={{ top: 20, right: 30, left: 120, bottom: 20 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                            <XAxis 
+                              type="number"
+                              tick={{ fontSize: 12, fill: '#6b7280' }}
+                              axisLine={{ stroke: '#d1d5db' }}
+                              tickLine={{ stroke: '#d1d5db' }}
+                              label={{ 
+                                value: 'SHAP Contribution', 
+                                position: 'insideBottom', 
+                                offset: -10,
+                                style: { textAnchor: 'middle', fontSize: '12px', fill: '#374151' }
+                              }}
+                            />
+                            <YAxis 
+                              type="category"
+                              dataKey="feature"
+                              tick={{ fontSize: 11, fill: '#6b7280' }}
+                              axisLine={{ stroke: '#d1d5db' }}
+                              tickLine={{ stroke: '#d1d5db' }}
+                              width={120}
+                            />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Bar 
+                              dataKey="value"
+                              radius={[0, 4, 4, 0]}
+                            >
+                              {waterfallData.map((entry, index) => (
+                                <Cell 
+                                  key={`cell-${index}`} 
+                                  fill={entry.value > 0 ? '#10B981' : '#EF4444'} 
+                                />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -85,64 +178,127 @@ function LocalShapResults({ data, model_type }) {
               const predictedClass = item.class_wise_feature_contributions.find(
                 (c) => c.class === prediction
               );
-              const sortedContributions = Object.entries(predictedClass.contributions).sort(
-                (a, b) => Math.abs(Number(b[1])) - Math.abs(Number(a[1]))
-              );
+              
+              if (!predictedClass) return null;
+
+              // Get SHAP contributions for the predicted class and sort by absolute value
+              const contributions = Object.entries(predictedClass.contributions)
+                .map(([feature, value]) => ({
+                  feature,
+                  value: Number(value)
+                }))
+                .sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+
+              const top3Contributors = contributions.slice(0, 3);
+
+              // Prepare waterfall data
+              const waterfallData = contributions.map((contrib, index) => ({
+                feature: contrib.feature,
+                value: contrib.value,
+                cumulative: contributions.slice(0, index + 1).reduce((sum, c) => sum + c.value, baselineValue)
+              }));
 
               return (
                 <Card key={rowId} className="border-l-4 border-l-purple-500 bg-purple-50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Target className="h-4 w-4 text-purple-600" />
-                      <span className="font-medium text-purple-900">Row #{rowId}</span>
+                  <CardContent className="p-6">
+                    {/* Header */}
+                    <div className="flex items-center gap-2 mb-4">
+                      <TrendingUpDown className="h-5 w-5 text-purple-600" />
+                      <h3 className="text-lg font-semibold text-purple-900">
+                        Prediction Explanation for Row #{rowId}
+                      </h3>
                     </div>
-                    <div className="mb-4 p-3 bg-white rounded-lg border">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-sm text-gray-600">Predicted Class: </span>
-                          <span className="text-lg font-bold text-purple-600">{prediction}</span>
-                        </div>
-                        <div>
-                          <span className="text-sm text-gray-600">Probability: </span>
-                          <span className="text-lg font-bold text-green-600">
-                            {(Number(predictedClass.probability) * 100).toFixed(1)}%
-                          </span>
-                        </div>
+
+                    {/* Prediction Summary */}
+                    <div className="mb-6 p-4 bg-white rounded-lg border">
+                      <p className="text-gray-700 mb-2">
+                        The model predicted <span className="font-semibold">{target}</span> as{' '}
+                        <span className="text-lg font-bold text-purple-600">{prediction}</span>{' '}
+                        with a probability of{' '}
+                        <span className="text-lg font-bold text-green-600">
+                          {(Number(predictedClass.probability)).toFixed(2)}
+                        </span>.
+                      </p>
+                      <p className="text-gray-600 text-sm">
+                        The baseline probability for this class is{' '}
+                        <span className="font-semibold">{(baselineValue).toFixed(1)}</span>{' '}
+                        (the probability assigned to this class when no features are provided). 
+                        The features below explain why this class was predicted.
+                      </p>
+                    </div>
+
+                    {/* Top Contributors */}
+                    <div className="mb-6">
+                      <h4 className="font-semibold text-gray-800 mb-3">
+                        The top 3 features influencing this prediction are:
+                      </h4>
+                      <ul className="space-y-2">
+                        {top3Contributors.map((contrib, index) => (
+                          <li key={index} className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${contrib.value > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
+                            <span className="font-medium text-gray-700">{contrib.feature}:</span>
+                            <span className={contrib.value > 0 ? 'text-green-600' : 'text-red-600'}>
+                              {contrib.value > 0 ? 'Increased' : 'Decreased'} the probability of "{prediction}" by{' '}
+                              {Math.abs(contrib.value).toFixed(3)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Closing Note */}
+                    <p className="text-sm text-gray-600 mb-6">
+                      Other features also contribute smaller amounts. See the visualization below for a complete breakdown.
+                    </p>
+
+                    {/* Waterfall Plot */}
+                    <div className="bg-white rounded-lg p-4 border">
+                      <h4 className="font-semibold text-gray-800 mb-4 text-center">
+                        How Features Shape the Prediction for Row #{rowId}
+                      </h4>
+                      <div className="h-96">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={waterfallData}
+                            layout="vertical"
+                            margin={{ top: 20, right: 30, left: 120, bottom: 20 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                            <XAxis 
+                              type="number"
+                              tick={{ fontSize: 12, fill: '#6b7280' }}
+                              axisLine={{ stroke: '#d1d5db' }}
+                              tickLine={{ stroke: '#d1d5db' }}
+                              label={{ 
+                                value: 'SHAP Contribution', 
+                                position: 'insideBottom', 
+                                offset: -10,
+                                style: { textAnchor: 'middle', fontSize: '12px', fill: '#374151' }
+                              }}
+                            />
+                            <YAxis 
+                              type="category"
+                              dataKey="feature"
+                              tick={{ fontSize: 11, fill: '#6b7280' }}
+                              axisLine={{ stroke: '#d1d5db' }}
+                              tickLine={{ stroke: '#d1d5db' }}
+                              width={120}
+                            />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Bar 
+                              dataKey="value"
+                              radius={[0, 4, 4, 0]}
+                            >
+                              {waterfallData.map((entry, index) => (
+                                <Cell 
+                                  key={`cell-${index}`} 
+                                  fill={entry.value > 0 ? '#10B981' : '#EF4444'} 
+                                />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-gray-700 mb-3">Feature Contributions:</h4>
-                      {sortedContributions.map(([feature, val], index) => {
-                        const numVal = Number(val);
-                        const isPositive = numVal > 0;
-                        const barWidth = Math.min(Math.abs(numVal) / Math.max(...sortedContributions.map(([, v]) => Math.abs(Number(v)))) * 100, 100);
-                        
-                        return (
-                          <div key={feature} className="p-2 bg-white rounded border">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-sm font-medium text-gray-700">{feature}</span>
-                              <div className="flex items-center gap-1">
-                                {isPositive ? (
-                                  <TrendingUp className="h-3 w-3 text-green-500" />
-                                ) : (
-                                  <TrendingDown className="h-3 w-3 text-red-500" />
-                                )}
-                                <span className={`text-sm font-mono ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                                  {numVal.toFixed(3)}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="w-full bg-gray-100 rounded-full h-1.5">
-                              <div
-                                className={`h-1.5 rounded-full transition-all duration-300 ${
-                                  isPositive ? 'bg-green-400' : 'bg-red-400'
-                                }`}
-                                style={{ width: `${barWidth}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
                     </div>
                   </CardContent>
                 </Card>

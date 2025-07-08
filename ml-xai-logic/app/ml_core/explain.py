@@ -143,6 +143,9 @@ def compute_local_shap_values_classification(model, X_processed_slice, shap_valu
         proba = model.predict_proba(row)[0]
 
 
+        predicted_class_index = np.where(classes == prediction)[0][0]
+        baseline_proba_for_predicted_class = base_values[predicted_class_index]
+
         current_row_shap_values = shap_values[i] # (n_features, num_classes)
 
         class_explanations = []
@@ -166,6 +169,7 @@ def compute_local_shap_values_classification(model, X_processed_slice, shap_valu
         local_explanations.append({
             "row_index": start + i,
             "prediction": convert_predictions_and_class_labels(prediction),
+            "baseline_probability_for_predicted_class": float(baseline_proba_for_predicted_class),
             "class_wise_feature_contributions": class_explanations
         })
 
@@ -179,6 +183,7 @@ def shap_values(start=0, end=1):
     # Build a SHAP explainer object.
     explainer = shap.Explainer(model) # Explainer class automatically detects the model type
     base_values = explainer.expected_value
+    print(type(base_values))
 
     # X_test shap values will be used for global feature importances
     x_test_shap_values = explainer.shap_values(X_test) # shape: (num_rows, num_features) for regression; (num_rows, num_features, num_classes) and is an np array
@@ -194,7 +199,7 @@ def shap_values(start=0, end=1):
 
         return {
             "model_type": type(model).__name__,
-            # "baseline": base_values,
+            "baseline": base_values.tolist(),
             "global_feature_importance": grouped_global_importances,
             "local_explanations": local_explanations,
         }
@@ -205,7 +210,7 @@ def shap_values(start=0, end=1):
 
         return {
             "model_type": type(model).__name__,
-            # "baseline": base_values,
+            "baseline": base_values.tolist(),
             "global_feature_importance": grouped_global_importances,
             "local_explanations": local_explanations,
         }

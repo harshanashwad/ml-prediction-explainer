@@ -156,7 +156,7 @@ const Results = ({ trainingResults, target }) => {
                 <GlobalShapResults 
                   data={explanationsData.global_feature_importance} 
                   model_type={explanationsData.model_type}
-                  target = {target}
+                  target ={target}
                 />
               )}
               
@@ -164,6 +164,8 @@ const Results = ({ trainingResults, target }) => {
                 <LocalShapResults 
                   data={explanationsData.local_explanations} 
                   model_type={explanationsData.model_type}
+                  baseline={explanationsData.baseline}
+                  target={target}
                 />
               )}
             </div>
