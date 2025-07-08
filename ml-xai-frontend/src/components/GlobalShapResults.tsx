@@ -201,7 +201,6 @@ function GlobalShapResults({ data, model_type, target }) {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis 
                     type="number" 
-                    // domain={xAxisDomain}
                     tick={{ fontSize: 12, fill: '#6b7280' }}
                     axisLine={{ stroke: '#d1d5db' }}
                     tickLine={{ stroke: '#d1d5db' }}
