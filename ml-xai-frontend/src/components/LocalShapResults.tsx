@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, Target, ChartBarStacked, TrendingUpDown } from 'lucide-react';
+import { Eye, ChartBarStacked, TrendingUpDown } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 function LocalShapResults({ data, model_type, baseline, target }) {
@@ -20,15 +20,18 @@ function LocalShapResults({ data, model_type, baseline, target }) {
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any; label?: any }) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-medium text-gray-900">{data.feature}</p>
-          <p className="text-sm text-gray-600">
-            SHAP Value: <span className="font-mono font-bold">{data.value.toFixed(4)}</span>
-          </p>
-        </div>
-      );
+      // Find the actual value (not the transparent part)
+      const actualValue = payload.find(p => p.dataKey === 'value');
+      if (actualValue) {
+        return (
+          <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+            <p className="font-medium text-gray-900">{label}</p>
+            <p className="text-sm text-gray-600">
+              SHAP Value: <span className="font-mono font-bold">{actualValue.value.toFixed(4)}</span>
+            </p>
+          </div>
+        );
+      }
     }
     return null;
   };
@@ -58,12 +61,38 @@ function LocalShapResults({ data, model_type, baseline, target }) {
 
               const top3Contributors = contributions.slice(0, 3);
 
-              // Prepare waterfall data
-              const waterfallData = contributions.map((contrib, index) => ({
-                feature: contrib.feature,
-                value: contrib.value,
-                cumulative: contributions.slice(0, index + 1).reduce((sum, c) => sum + c.value, baselineValue)
-              }));
+              // Prepare waterfall data with cumulative values
+              let cumulativeValue = baselineValue;
+              const waterfallData = [
+                // Baseline
+                {
+                  name: 'Baseline',
+                  value: baselineValue,
+                  base: 0,
+                  isBaseline: true,
+                  isPrediction: false
+                },
+                // Features
+                ...contributions.map((contrib) => {
+                  const currentBase = cumulativeValue;
+                  cumulativeValue += contrib.value;
+                  return {
+                    name: contrib.feature,
+                    value: contrib.value,
+                    base: contrib.value >= 0 ? currentBase : cumulativeValue,
+                    isBaseline: false,
+                    isPrediction: false
+                  };
+                }),
+                // Final prediction
+                {
+                  name: 'Prediction',
+                  value: prediction,
+                  base: 0,
+                  isBaseline: false,
+                  isPrediction: true
+                }
+              ];
 
               return (
                 <Card key={rowId} className="border-l-4 border-l-blue-500 bg-blue-50">
@@ -91,8 +120,6 @@ function LocalShapResults({ data, model_type, baseline, target }) {
                         (baseline = model output when none of the features are provided). 
                         The SHAP values below explain how the prediction deviates from this baseline.
                       </p>
-
-
                     </div>
 
                     {/* Top Contributors */}
@@ -114,7 +141,6 @@ function LocalShapResults({ data, model_type, baseline, target }) {
                       </ul>
                     </div>
 
-
                     {/* Closing Note */}
                     <p className="text-sm text-gray-600 mb-6">
                       Other features also contribute smaller amounts. See the visualization below for a complete breakdown.
@@ -126,47 +152,72 @@ function LocalShapResults({ data, model_type, baseline, target }) {
                         How Features Shape the Prediction for Row #{rowId}
                       </h4>
                       <div className="h-96">
+
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
-                            data={waterfallData}
+                            data={
+                              (() => {
+                                let cumulative = baselineValue;
+                                return contributions.map((contrib, index) => {
+                                  const start = cumulative;
+                                  cumulative += contrib.value;
+                                  return {
+                                    name: contrib.feature,
+                                    pv: start,
+                                    uv: contrib.value,
+                                  };
+                                });
+                              })()
+                            }
                             layout="vertical"
                             margin={{ top: 20, right: 30, left: 120, bottom: 20 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                            <XAxis 
+                            <XAxis
                               type="number"
                               tick={{ fontSize: 12, fill: '#6b7280' }}
                               axisLine={{ stroke: '#d1d5db' }}
                               tickLine={{ stroke: '#d1d5db' }}
-                              label={{ 
-                                value: 'SHAP Contribution', 
-                                position: 'insideBottom', 
+                              label={{
+                                value: 'SHAP Contribution',
+                                position: 'insideBottom',
                                 offset: -10,
-                                style: { textAnchor: 'middle', fontSize: '12px', fill: '#374151' }
+                                style: { textAnchor: 'middle', fontSize: '12px', fill: '#374151' },
                               }}
                             />
-                            <YAxis 
+                            <YAxis
                               type="category"
-                              dataKey="feature"
+                              dataKey="name"
                               tick={{ fontSize: 11, fill: '#6b7280' }}
                               axisLine={{ stroke: '#d1d5db' }}
                               tickLine={{ stroke: '#d1d5db' }}
                               width={120}
                             />
                             <Tooltip content={<CustomTooltip />} />
-                            <Bar 
-                              dataKey="value"
-                              radius={[0, 4, 4, 0]}
-                            >
-                              {waterfallData.map((entry, index) => (
-                                <Cell 
-                                  key={`cell-${index}`} 
-                                  fill={entry.value > 0 ? '#10B981' : '#EF4444'} 
-                                />
-                              ))}
+                            {/* Transparent base bar */}
+                            <Bar dataKey="pv" stackId="a" fill="transparent" />
+                            {/* Colored contribution bar */}
+                            <Bar dataKey="uv" stackId="a" radius={[0,4,4,0]}>
+                              {(() => {
+                                let cumulative = baselineValue;
+                                return contributions.map((entry, index) => {
+                                  cumulative += entry.value;
+                                  return (
+                                    <Cell
+                                      key={`cell-${index}`}
+                                      fill={
+                                        entry.value > 0
+                                          ? '#10B981' // Green
+                                          : '#EF4444' // Red
+                                      }
+                                    />
+                                  );
+                                });
+                              })()}
                             </Bar>
                           </BarChart>
                         </ResponsiveContainer>
+
                       </div>
                     </div>
                   </CardContent>
@@ -191,20 +242,46 @@ function LocalShapResults({ data, model_type, baseline, target }) {
 
               const top3Contributors = contributions.slice(0, 3);
 
-              // Prepare waterfall data
-              const waterfallData = contributions.map((contrib, index) => ({
-                feature: contrib.feature,
-                value: contrib.value,
-                cumulative: contributions.slice(0, index + 1).reduce((sum, c) => sum + c.value, baselineValue)
-              }));
+              // Prepare waterfall data with cumulative values
+              let cumulativeValue = baselineValue;
+              const waterfallData = [
+                // Baseline
+                {
+                  name: 'Baseline',
+                  value: baselineValue,
+                  base: 0,
+                  isBaseline: true,
+                  isPrediction: false
+                },
+                // Features
+                ...contributions.map((contrib) => {
+                  const currentBase = cumulativeValue;
+                  cumulativeValue += contrib.value;
+                  return {
+                    name: contrib.feature,
+                    value: contrib.value,
+                    base: contrib.value >= 0 ? currentBase : cumulativeValue,
+                    isBaseline: false,
+                    isPrediction: false
+                  };
+                }),
+                // Final prediction probability
+                {
+                  name: 'Prediction',
+                  value: Number(predictedClass.probability),
+                  base: 0,
+                  isBaseline: false,
+                  isPrediction: true
+                }
+              ];
 
               return (
-                <Card key={rowId} className="border-l-4 border-l-purple-500 bg-purple-50">
+                <Card key={rowId} className="border-l-4 border-l-indigo-500 bg-indigo-50">
                   <CardContent className="p-6">
                     {/* Header */}
                     <div className="flex items-center gap-2 mb-4">
-                      <TrendingUpDown className="h-5 w-5 text-purple-600" />
-                      <h3 className="text-lg font-semibold text-purple-900">
+                      <TrendingUpDown className="h-5 w-5 text-indigo-600" />
+                      <h3 className="text-lg font-semibold text-indigo-900">
                         Prediction Explanation for Row #{rowId}
                       </h3>
                     </div>
@@ -213,7 +290,7 @@ function LocalShapResults({ data, model_type, baseline, target }) {
                     <div className="mb-6 p-4 bg-white rounded-lg border">
                       <p className="text-gray-700 mb-2">
                         The model predicted <span className="font-semibold">{target}</span> as{' '}
-                        <span className="text-lg font-bold text-purple-600">{prediction}</span>{' '}
+                        <span className="text-lg font-bold text-indigo-600">{prediction}</span>{' '}
                         with a probability of{' '}
                         <span className="text-lg font-bold text-green-600">
                           {(Number(predictedClass.probability)).toFixed(2)}
@@ -257,47 +334,71 @@ function LocalShapResults({ data, model_type, baseline, target }) {
                         How Features Shape the Prediction for Row #{rowId}
                       </h4>
                       <div className="h-96">
-                        <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height="100%">
                           <BarChart
-                            data={waterfallData}
+                            data={
+                              (() => {
+                                let cumulative = baselineValue;
+                                return contributions.map((contrib, index) => {
+                                  const start = cumulative;
+                                  cumulative += contrib.value;
+                                  return {
+                                    name: contrib.feature,
+                                    pv: start,
+                                    uv: contrib.value,
+                                  };
+                                });
+                              })()
+                            }
                             layout="vertical"
                             margin={{ top: 20, right: 30, left: 120, bottom: 20 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                            <XAxis 
+                            <XAxis
                               type="number"
                               tick={{ fontSize: 12, fill: '#6b7280' }}
                               axisLine={{ stroke: '#d1d5db' }}
                               tickLine={{ stroke: '#d1d5db' }}
-                              label={{ 
-                                value: 'SHAP Contribution', 
-                                position: 'insideBottom', 
+                              label={{
+                                value: 'SHAP Contribution',
+                                position: 'insideBottom',
                                 offset: -10,
-                                style: { textAnchor: 'middle', fontSize: '12px', fill: '#374151' }
+                                style: { textAnchor: 'middle', fontSize: '12px', fill: '#374151' },
                               }}
                             />
-                            <YAxis 
+                            <YAxis
                               type="category"
-                              dataKey="feature"
+                              dataKey="name"
                               tick={{ fontSize: 11, fill: '#6b7280' }}
                               axisLine={{ stroke: '#d1d5db' }}
                               tickLine={{ stroke: '#d1d5db' }}
                               width={120}
                             />
                             <Tooltip content={<CustomTooltip />} />
-                            <Bar 
-                              dataKey="value"
-                              radius={[0, 4, 4, 0]}
-                            >
-                              {waterfallData.map((entry, index) => (
-                                <Cell 
-                                  key={`cell-${index}`} 
-                                  fill={entry.value > 0 ? '#10B981' : '#EF4444'} 
-                                />
-                              ))}
+                            {/* Transparent base bar */}
+                            <Bar dataKey="pv" stackId="a" fill="transparent" />
+                            {/* Colored contribution bar */}
+                            <Bar dataKey="uv" stackId="a" radius={[0,4,4,0]}>
+                              {(() => {
+                                let cumulative = baselineValue;
+                                return contributions.map((entry, index) => {
+                                  cumulative += entry.value;
+                                  return (
+                                    <Cell
+                                      key={`cell-${index}`}
+                                      fill={
+                                        entry.value > 0
+                                          ? '#10B981' // Green
+                                          : '#EF4444' // Red
+                                      }
+                                    />
+                                  );
+                                });
+                              })()}
                             </Bar>
                           </BarChart>
                         </ResponsiveContainer>
+
                       </div>
                     </div>
                   </CardContent>
