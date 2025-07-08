@@ -109,8 +109,10 @@ const Results = ({ trainingResults, target }) => {
               <h4 className="font-medium text-blue-900 mb-3">Row Range Selection</h4>
               <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <label className="text-sm text-blue-700">Start:</label>
+                  <label htmlFor="start-row-input" className="text-sm text-blue-700">Start:</label>
                   <input
+                    id="start-row-input"
+                    name="startRow"
                     type="number"
                     value={rowRange.start}
                     onChange={(e) => setRowRange({ ...rowRange, start: parseInt(e.target.value) || 0 })}
@@ -119,8 +121,10 @@ const Results = ({ trainingResults, target }) => {
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-sm text-blue-700">End:</label>
+                  <label htmlFor="end-row-input" className="text-sm text-blue-700">End:</label>
                   <input
+                    id="end-row-input"
+                    name="endRow"
                     type="number"
                     value={rowRange.end}
                     onChange={(e) => setRowRange({ ...rowRange, end: parseInt(e.target.value) || 1 })}
