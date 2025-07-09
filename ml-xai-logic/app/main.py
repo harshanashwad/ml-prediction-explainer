@@ -10,7 +10,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:8080", # Vite dev server
-        "https://ml-prediction-explainer.vercel.app", # Vercel frontend
+        "https://mlpeek.vercel.app", # Vercel frontend
         ],  
     allow_credentials=True,
     allow_methods=["*"],
