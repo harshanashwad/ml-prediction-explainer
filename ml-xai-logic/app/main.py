@@ -8,7 +8,10 @@ app = FastAPI(title="ML Prediction Explanation Interface") # Initializing my app
 # Added to fix CORS middleware issue
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"],  # Vite dev server
+    allow_origins=[
+        "http://localhost:8080", # Vite dev server
+        "https://ml-prediction-explainer.vercel.app", # Vercel frontend
+        ],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
