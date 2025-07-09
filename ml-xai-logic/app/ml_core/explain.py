@@ -4,12 +4,23 @@ import pandas as pd
 import joblib
 import numpy as np
 from app.utils.io import preprocess_dataset
+from fastapi import HTTPException
 import os
 
 ############################################################
 ### Common utilities (used in both tasks)
 
 def load_model_and_test_data():
+    # Paths
+    model_path = "artifacts/latest_model.pkl"
+    uploaded_data_path = "artifacts/uploaded_dataset.csv"
+    x_test_path = "artifacts/X_test.csv"
+
+    # Check if all required files exist
+    for path in [model_path, uploaded_data_path, x_test_path]:
+        if not os.path.exists(path):
+            raise HTTPException(status_code=400, detail=f"Missing file: {path}. Please ensure model is trained and CSV is uploaded.")
+        
     # Load saved model and X_test
     model = joblib.load("artifacts/latest_model.pkl")
     model_name = type(model).__name__

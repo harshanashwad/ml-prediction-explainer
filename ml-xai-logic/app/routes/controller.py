@@ -3,7 +3,7 @@ The API layer. It defines what API endpoints exist and what they trigger.
 
 This is where the API routes live.
 '''
-
+import os
 from fastapi import APIRouter, UploadFile, HTTPException, Query
 from app.utils.io import read_uploaded_csv, validate_dataframe
 from pydantic import BaseModel
@@ -19,6 +19,10 @@ async def upload_csv(file: UploadFile):
         raise HTTPException(status_code=400, detail="Only CSV files are supported.")
 
     try:
+        # Create directories if they don't exist
+        os.makedirs("data", exist_ok=True)
+        os.makedirs("artifacts", exist_ok=True)
+
         df = read_uploaded_csv(file)
         validation = validate_dataframe(df)
 
