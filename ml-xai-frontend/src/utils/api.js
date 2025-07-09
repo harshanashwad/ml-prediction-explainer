@@ -8,7 +8,9 @@ This is better than making axios calls directly in the component
 import axios from "axios";
 
 // Adjust this if your backend runs on a different port in prod
-const BASE_URL = "http://localhost:8000";
+// const BASE_URL = "http://localhost:8000";
+const BASE_URL = import.meta.env.VITE_API_URL;
+
 
 // Upload CSV
 export const uploadCSV = async (file) => {
