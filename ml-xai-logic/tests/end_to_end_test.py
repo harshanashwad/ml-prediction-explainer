@@ -9,7 +9,7 @@ from pathlib import Path
 # Configuration - adjust as needed
 CONFIG = {
     "base_url": "http://localhost:8000",
-    "test_data_path": "../data/Housing.csv",  # Path relative to tests/
+    "test_data_path": "../data/last_uploaded.csv",  # Path relative to tests/
     "results_path": "results/test_results.json",
     "request_delay": 0.5  # seconds between API calls
 }
