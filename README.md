@@ -48,6 +48,7 @@ ml-prediction-explainer/
 │   ├── package-lock.json        # Locked dependency versions
 │   ├── vite.config.js           # Vite configuration for development and build
 │   ├── eslint.config.js         # ESLint configuration for code quality
+│   ├── src                      # contains all the components, hooks for frontend
 │   └── README.md                # Frontend project documentation
 └── README.md                    # Root project documentation
 ```
