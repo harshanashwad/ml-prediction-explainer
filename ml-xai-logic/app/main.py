@@ -11,7 +11,9 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:8080", # Vite dev server
         "https://mlpeek.vercel.app", # Vercel frontend
-        ],  
+        'https://ml-prediction-explainer-git-main-harshan-ashwads-projects.vercel.app',
+        'https://ml-prediction-explainer-hzuc2ee6h-harshan-ashwads-projects.vercel.app'        
+    ],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
